@@ -1,2 +1,4 @@
+__pycache__/
+experiment/
 poetry.lock
 pyproject.toml
