@@ -3,26 +3,20 @@ import os
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
 
+def rescale(x):
+    return x * 2 - 1
+
 def get_dataset(args, config):
+    transform = []
+    transform.append(transforms.Resize(config.data.image_size))
     if config.data.random_flip:
-        train_transform = transforms.Compose([
-            transforms.Resize(config.data.image_size),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor()
-        ])
-    else:
-        train_transform = transforms.Compose([
-            transforms.Resize(config.data.image_size),
-            transforms.ToTensor()
-        ])
-    test_transform = transforms.Compose([
-        transforms.Resize(config.data.image_size),
-        transforms.ToTensor()
-    ])
+        transform.append(transforms.RandomHorizontalFlip())
+    transform.append(transforms.ToTensor())
+    if config.data.rescaled:
+        transform.append(transforms.Lambda(rescale))
+    transform = transforms.Compose(transform)
 
-    train_dataset_path = os.path.join(args.exp, 'datasets', 'cifar10_train')
-    train_dataset = CIFAR10(train_dataset_path, train=True, download=True, transform=train_transform)
-    test_dataset_path = os.path.join(args.exp, 'datasets', 'cifar10_test')
-    test_dataset = CIFAR10(test_dataset_path, train=False, download=True, transform=test_transform)
+    dataset_path = os.path.join(args.exp, 'datasets', 'cifar10')
+    dataset = CIFAR10(dataset_path, train=True, download=True, transform=transform)
 
-    return train_dataset, test_dataset
+    return dataset
