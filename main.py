@@ -5,6 +5,8 @@ import shutil
 import torch
 import yaml
 
+from runners.diffusion import Diffusion
+
 # disable scientific notation
 torch.set_printoptions(sci_mode=False)
 
@@ -92,7 +94,7 @@ def overwrite_training_folder(args, config):
     with open(config_file, 'w') as file:
         yaml.dump(config, file)
 
-def dict2namespace(config: dict) -> argparse.Namespace:
+def dict2namespace(config):
     namespace = argparse.Namespace()
     for key, value in config.items():
         if isinstance(value, dict):
@@ -122,3 +124,9 @@ if __name__ == '__main__':
     log_path = os.path.join(args.exp, 'logs', args.doc)
     print(f'Writing log file to {log_path}')
     print(f'Exp comment = {args.comment}')
+
+    diffusion = Diffusion(args, config, device)
+    if args.sample:
+        diffusion.sample()
+    elif not args.test:
+        diffusion.train()
