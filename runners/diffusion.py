@@ -3,7 +3,7 @@ import torch
 import warnings
 
 from datasets import get_dataset
-from models import Model
+from models import Model, EMAHelper
 from torch import nn, optim
 from torch.nn.utils import clip_grad_norm_
 from torch.utils.data import DataLoader
@@ -50,9 +50,9 @@ class Diffusion:
 
         loss_fn = nn.MSELoss().to(self.device)
 
-        # if self.config.model.ema:
-        #     ema_helper = EMAHelper(self.config.model.ema_rate)
-        #     ema_helper.register(model)
+        if self.config.model.ema:
+            ema_helper = EMAHelper(self.config.model.ema_rate)
+            ema_helper.register(model)
 
         start_epoch = 0
         step = 0
@@ -67,8 +67,8 @@ class Diffusion:
             start_epoch = states[2]
             step = states[3]
             
-            # if self.config.model.ema:
-            #     ema_helper.load_state_dict(states[4])
+            if self.config.model.ema:
+                ema_helper.load_state_dict(states[4])
 
         model.train()
         
@@ -93,8 +93,8 @@ class Diffusion:
                 clip_grad_norm_(model.parameters(), self.config.optim.grad_clip)
                 optimizer.step()
 
-                # if self.config.model.ema:
-                #     ema_helper.update(model)
+                if self.config.model.ema:
+                    ema_helper.update(model)
 
                 if step % self.config.training.snapshot_freq == 0:
                     states = [
@@ -103,8 +103,8 @@ class Diffusion:
                         epoch,
                         step
                     ]
-                    # if self.config.model.ema:
-                    #     states.append(ema_helper.state_dict())
+                    if self.config.model.ema:
+                        states.append(ema_helper.state_dict())
                     
                     checkpoint_step_path = os.path.join(self.args.exp, 'logs', self.args.doc, f'ckpt_{step}.pth')
                     torch.save(states, checkpoint_step_path)
@@ -126,11 +126,11 @@ class Diffusion:
         states = torch.load(checkpoint_path, weights_only=True)
         model.load_state_dict(states[0])
 
-        # if self.config.model.ema:
-        #     ema_helper = EMAHelper(self.config.model.ema_rate)
-        #     ema_helper.register(model)
-        #     ema_helper.load_state_dict(states[4])
-        #     ema_helper.ema(model)
+        if self.config.model.ema:
+            ema_helper = EMAHelper(self.config.model.ema_rate)
+            ema_helper.register(model)
+            ema_helper.load_state_dict(states[4])
+            ema_helper.ema(model)
 
         model.eval()
 
